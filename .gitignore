@@ -121,3 +121,10 @@ temp/
 .Trashes
 ehthumbs.db
 Thumbs.db*.md
+.md
+.bak
+# Workspace files (OpenClaw system files)
+*.md
+.gitignore
+README.md
+
