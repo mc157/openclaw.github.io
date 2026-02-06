@@ -65,7 +65,7 @@ export class GitHubScraper {
       return response.data.items.map((repo: any) => ({
         id: `github-repo-${repo.id}`,
         title: `${repo.full_name}: ${repo.description || 'No description'}`,
-        content: repo.description || '',
+        description: repo.description || '',
         source: 'GitHub',
         url: repo.html_url,
         author: repo.owner?.login,
@@ -91,7 +91,7 @@ export class GitHubScraper {
       return response.data.items.map((issue: any) => ({
         id: `github-issue-${issue.id}`,
         title: `${issue.repository.full_name}: ${issue.title}`,
-        content: issue.body || '',
+        description: issue.body || '',
         source: 'GitHub Issues',
         url: issue.html_url,
         author: issue.user?.login,

@@ -44,7 +44,7 @@ export class RedditScraper {
             const item: NewsItem = {
               id: `reddit-${subreddit}-${postData.id}`,
               title: postData.title,
-              content: postData.selftext || postData.url || '',
+              description: postData.selftext || postData.url || '',
               source: `r/${subreddit}`,
               url: `https://reddit.com${postData.permalink}`,
               author: postData.author,

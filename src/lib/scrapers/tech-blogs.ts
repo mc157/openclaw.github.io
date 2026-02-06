@@ -77,7 +77,7 @@ export class TechBlogScraper {
         return {
           id: `${feed.name.toLowerCase().replace(/\s+/g, '-')}-${index}`,
           title,
-          content: this.cleanHTML(content),
+          description: this.cleanHTML(content),
           source: feed.name,
           url: link,
           author: creator,
@@ -107,7 +107,7 @@ export class TechBlogScraper {
       return items.map((item: any, index: number) => ({
         id: `${feed.name.toLowerCase().replace(/\s+/g, '-')}-${index}`,
         title: item.title || '',
-        content: this.cleanHTML(item.content || item.summary || ''),
+        description: this.cleanHTML(item.content || item.summary || ''),
         source: feed.name,
         url: item.url || '',
         author: item.author?.name || item.author,
