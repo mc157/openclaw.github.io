@@ -1,9 +1,10 @@
 'use client';
 
+import { motion, AnimatePresence } from 'framer-motion';
+import { useState, useEffect } from 'react';
 import { NewsCard } from '@/components/NewsCard';
 import { CategoryFilter } from '@/components/CategoryFilter';
 import { LiveTicker } from '@/components/LiveTicker';
-import { useState, useEffect } from 'react';
 import { NewsItem } from '@/lib/types';
 
 export default function Home() {
@@ -13,9 +14,18 @@ export default function Home() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Load data directly from JSON file
     const loadNews = async () => {
       try {
+        const apiResponse = await fetch('/api/news');
+        if (apiResponse.ok) {
+          const data = await apiResponse.json();
+          if (data.data) {
+            setNews(data.data);
+            setFilteredNews(data.data);
+            return;
+          }
+        }
+        
         const response = await fetch('/src/data/scraped-data.json');
         if (response.ok) {
           const data = await response.json();
@@ -46,73 +56,205 @@ export default function Home() {
     setSelectedCategory(category);
   };
 
-  const formatLastUpdated = (date: Date | null) => {
-    if (!date) return 'Never';
-    const now = new Date();
-    const diff = now.getTime() - date.getTime();
-    const minutes = Math.floor(diff / (1000 * 60));
-    
-    if (minutes < 1) return 'Just now';
-    if (minutes < 60) return `${minutes}m ago`;
-    const hours = Math.floor(minutes / 60);
-    if (hours < 24) return `${hours}h ago`;
-    return date.toLocaleDateString();
-  };
-
   return (
-    <div className="min-h-screen bg-gray-900 text-white">
-      <header className="bg-gray-800 shadow-lg">
+    <div className="min-h-screen bg-gray-900 text-white cyber-grid-bg">
+      <motion.header 
+        initial={{ opacity: 0, y: -20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="bg-gray-800 shadow-lg border-b border-cyber-border"
+      >
         <div className="container mx-auto px-4 py-6">
           <div className="flex justify-between items-center">
             <div>
-              <h1 className="text-4xl font-bold text-cyan-400">ClawBot News Hub</h1>
-              <p className="text-gray-300">Cyberpunk News Aggregation</p>
-              <div className="text-sm text-gray-400 mt-2">
-                Updated: Just now
-                <span className="ml-2 text-green-400 animate-pulse">
-                  🔴 {news.length} sources live
-                </span>
-              </div>
+              <motion.h1 
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: 0.2 }}
+                className="text-4xl font-bold cyber-text-gradient"
+              >
+                ClawBot News Hub
+              </motion.h1>
+              <motion.p 
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: 0.3 }}
+                className="text-gray-400"
+              >
+                Cyberpunk News Aggregation
+              </motion.p>
+              <motion.div 
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: 0.4 }}
+                className="flex items-center gap-4 text-sm text-gray-400 mt-2"
+              >
+                <div className="flex items-center gap-2">
+                  <span className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></span>
+                  <span>Updated: Just now</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-green-400">🔴</span>
+                  <span>{news.length} sources live</span>
+                </div>
+              </motion.div>
             </div>
-            <div className="flex gap-2">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.5 }}
+              className="flex gap-2"
+            >
               <button
                 onClick={() => window.location.reload()}
                 disabled={loading}
-                className="bg-cyan-600 hover:bg-cyan-700 px-4 py-2 rounded disabled:opacity-50"
+                className="cyber-button text-sm"
               >
                 {loading ? 'Refreshing...' : 'Refresh'}
               </button>
-            </div>
+            </motion.div>
           </div>
         </div>
-      </header>
+      </motion.header>
 
       <main className="container mx-auto px-4 py-8">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          <div className="lg:col-span-2">
-            <div className="mb-6">
+          <div className="lg:col-span-2 space-y-6">
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.6 }}
+            >
               <CategoryFilter selectedCategory={selectedCategory} onCategoryChange={handleCategoryChange} />
-            </div>
+            </motion.div>
             
-            <div className="space-y-6">
-              {filteredNews.length > 0 ? (
-                filteredNews.map((item) => (
-                  <NewsCard key={item.id} news={item} />
-                ))
+            <AnimatePresence mode="wait">
+              {loading ? (
+                <div className="space-y-6">
+                  {[...Array(6)].map((_, index) => (
+                    <motion.div
+                      key={index}
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.1 * index }}
+                      className="cyber-card h-32 animate-pulse"
+                    >
+                      <div className="h-6 bg-gray-700 rounded w-3/4 mb-2"></div>
+                      <div className="h-4 bg-gray-700 rounded w-full mb-2"></div>
+                      <div className="h-4 bg-gray-700 rounded w-2/3"></div>
+                    </motion.div>
+                  ))}
+                </div>
+              ) : filteredNews.length === 0 ? (
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  className="cyber-card text-center py-12"
+                >
+                  <div className="text-6xl mb-4">📭</div>
+                  <h3 className="text-xl text-gray-300 mb-2">No news found</h3>
+                  <p className="text-gray-500">
+                    Try a different category or refresh the page
+                  </p>
+                </motion.div>
               ) : (
-                <div className="text-center py-12 text-gray-400">
-                  <p>No news found for this category.</p>
-                  <p className="text-sm mt-2">Try selecting a different category or refreshing.</p>
+                <div className="space-y-6">
+                  {filteredNews.map((item, index) => (
+                    <motion.div
+                      key={item.id}
+                      initial={{ opacity: 0, y: 50 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ duration: 0.5, delay: index * 0.1 }}
+                    >
+                      <NewsCard news={item} index={index} />
+                    </motion.div>
+                  ))}
                 </div>
               )}
-            </div>
+            </AnimatePresence>
           </div>
 
-          <div className="lg:col-span-1">
-            <LiveTicker items={news} />
+          <div className="lg:col-span-1 space-y-6">
+            <motion.div
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: 0.7 }}
+            >
+              <LiveTicker items={news} />
+            </motion.div>
+
+            <motion.div
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: 0.8 }}
+              className="cyber-card"
+            >
+              <div className="p-6">
+                <h3 className="text-lg font-bold text-cyan-400 mb-4 flex items-center gap-2">
+                  <span>📊</span>
+                  Statistics
+                </h3>
+                <div className="space-y-3">
+                  <div className="flex justify-between">
+                    <span className="text-gray-400">Total Items</span>
+                    <span className="font-bold text-green-400">{news.length}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-400">Categories</span>
+                    <span className="font-bold text-blue-400">
+                      {[...new Set(news.map(item => item.category))].length}
+                    </span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-400">Average Score</span>
+                    <span className="font-bold text-yellow-400">
+                      {Math.round(news.reduce((sum, item) => sum + item.score, 0) / news.length)}%
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </motion.div>
+
+            <motion.div
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: 0.9 }}
+              className="cyber-card"
+            >
+              <div className="p-6">
+                <h3 className="text-lg font-bold text-cyan-400 mb-4 flex items-center gap-2">
+                  <span>🔗</span>
+                  Sources
+                </h3>
+                <div className="space-y-2">
+                  {[...new Set(news.map(item => item.source))].map((source, index) => (
+                    <motion.div
+                      key={source}
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      transition={{ delay: 1 + index * 0.1 }}
+                      className="flex items-center gap-2 text-sm text-gray-400"
+                    >
+                      <span className="w-2 h-2 bg-green-400 rounded-full"></span>
+                      <span>{source}</span>
+                    </motion.div>
+                  ))}
+                </div>
+              </div>
+            </motion.div>
           </div>
         </div>
       </main>
+
+      <motion.footer 
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ delay: 1 }}
+        className="mt-16 py-8 border-t border-gray-800"
+      >
+        <div className="container mx-auto px-4 text-center text-gray-500 text-sm">
+          <p>ClawBot News Hub • Cyberpunk News Aggregation • Built with Next.js & Tailwind CSS</p>
+        </div>
+      </motion.footer>
     </div>
   );
 }
