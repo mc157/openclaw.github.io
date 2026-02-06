@@ -1,0 +1,39 @@
+{
+  "name": "clawbot-news-hub",
+  "version": "1.0.0",
+  "description": "OpenClaw News Hub - Cyberpunk news aggregation",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint",
+    "scrape": "node scripts/run-scrapers.js",
+    "schedule": "node scripts/scheduler.js",
+    "git-push": "node scripts/git-push.js"
+  },
+  "dependencies": {
+    "axios": "^1.6.0",
+    "cacache": "^20.0.3",
+    "form-data": "^4.0.5",
+    "framer-motion": "^10.16.0",
+    "make-fetch-happen": "^15.0.3",
+    "next": "^16.1.6",
+    "node-gyp": "^12.2.0",
+    "puppeteer": "^24.15.0",
+    "qs": "^6.14.1",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "semver": "^7.7.4",
+    "tailwindcss": "^3.4.0",
+    "tough-cookie": "^6.0.0",
+    "typescript": "^5.3.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.10.0",
+    "@types/react": "^18.2.0",
+    "@types/react-dom": "^18.2.0",
+    "eslint": "^9.0.0-beta.0",
+    "eslint-config-next": "16.1.6"
+  }
+}
