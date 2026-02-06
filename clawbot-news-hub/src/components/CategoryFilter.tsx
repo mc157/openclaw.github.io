@@ -1,5 +1,10 @@
-export function CategoryFilter() {
-  const categories = ['All', 'ClawBot', 'Models', 'Technology', 'Security'];
+interface CategoryFilterProps {
+  selectedCategory: string;
+  onCategoryChange: (category: string) => void;
+}
+
+export function CategoryFilter({ selectedCategory, onCategoryChange }: CategoryFilterProps) {
+  const categories = ['All', 'ClawBot', 'API', 'Models', 'How-To', 'General'];
   
   return (
     <div className="mb-6">
@@ -8,7 +13,12 @@ export function CategoryFilter() {
         {categories.map((category) => (
           <button
             key={category}
-            className="px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg transition-colors"
+            onClick={() => onCategoryChange(category)}
+            className={`px-4 py-2 rounded-lg transition-colors ${
+              selectedCategory === category
+                ? 'bg-cyan-600 text-white'
+                : 'bg-gray-700 hover:bg-gray-600 text-gray-300'
+            }`}
           >
             {category}
           </button>

@@ -1,62 +1,57 @@
 #!/usr/bin/env node
 
 /**
- * Manual scraper runner
- * Run with: npm run scrape
+ * Script to run all news scrapers and collect data
+ * Usage: npm run scrape
  */
 
 const path = require('path');
 
-// Set up path for data directory
-process.env.DATA_DIR = path.join(__dirname, '..', 'data');
+// Set up environment
+process.env.NODE_ENV = process.env.NODE_ENV || 'development';
 
-// Import modules
-const { scrapeSources } = require('../dist/lib/aggregator.js');
-const { db } = require('../dist/lib/database.js');
-
-console.log('='.repeat(60));
-console.log('ClawBot News Hub - Manual Scraper Runner');
-console.log('='.repeat(60));
-
-async function runScraping() {
+async function runScrapers() {
+  console.log('🕷️  Starting news scraping process...\n');
+  
   try {
-    console.log(`Starting manual scraping session at ${new Date().toISOString()}`);
+    // Import the aggregator functions
+    const { scrapeSources, aggregateData } = await import('../src/lib/aggregator.ts');
     
-    // Initialize database
-    await db.initialize();
-    console.log('✓ Database initialized');
+    console.log('📡 Scraping sources...');
+    const scrapedData = await scrapeSources();
     
-    // Run scraping
-    const newItems = await scrapeSources();
+    console.log('\n📊 Aggregating data...');
+    const aggregatedData = await aggregateData();
     
-    console.log('');
-    console.log('Scraping Results:');
-    console.log('-'.repeat(40));
-    console.log(`New items found: ${newItems.length}`);
+    // Display results
+    console.log('\n✅ Scraping completed successfully!\n');
+    console.log('📈 Results:');
+    console.log(`  - Reddit posts: ${scrapedData.reddit?.length || 0}`);
+    console.log(`  - GitHub items: ${scrapedData.github?.length || 0}`);
+    console.log(`  - Tech blog items: ${scrapedData.general?.length || 0}`);
+    console.log(`  - Total items: ${aggregatedData.items.length}`);
+    console.log(`  - Sources: ${aggregatedData.totalSources}`);
+    console.log(`  - Last updated: ${new Date(aggregatedData.lastUpdated).toLocaleString()}`);
     
-    if (newItems.length > 0) {
-      console.log('\nRecent items:');
-      newItems.slice(0, 5).forEach((item, index) => {
-        console.log(`${index + 1}. ${item.title}`);
-        console.log(`   Source: ${item.source} | Category: ${item.category}`);
-        console.log(`   Score: ${item.score} | Time: ${new Date(item.timestamp).toLocaleString()}`);
-        console.log('');
-      });
-      
-      if (newItems.length > 5) {
-        console.log(`... and ${newItems.length - 5} more items`);
-      }
-    } else {
-      console.log('No new items found. This might be normal if data is up to date.');
-    }
+    // Display category breakdown
+    const categories = {};
+    aggregatedData.items.forEach(item => {
+      categories[item.category] = (categories[item.category] || 0) + 1;
+    });
     
-    console.log('='.repeat(60));
-    console.log('Manual scraping completed successfully!');
+    console.log('\n📋 Category breakdown:');
+    Object.entries(categories).forEach(([category, count]) => {
+      console.log(`  - ${category}: ${count} items`);
+    });
     
+    console.log('\n🎉 All done!');
+    
+    process.exit(0);
   } catch (error) {
-    console.error('Error during scraping:', error);
+    console.error('\n❌ Error during scraping:', error);
     process.exit(1);
   }
 }
 
-runScraping();
+// Run the scrapers
+runScrapers();

@@ -1,14 +1,6 @@
-interface NewsItem {
-  id: string;
-  title: string;
-  content: string;
-  source: string;
-  url: string;
-  author: string;
-  timestamp: number;
-  category: string;
-  score: number;
-}
+'use client';
+
+import { NewsItem } from '@/lib/types';
 
 interface NewsCardProps {
   news: NewsItem;
@@ -22,6 +14,9 @@ export function NewsCard({ news }: NewsCardProps) {
       <div className="flex justify-between items-center text-sm text-gray-400">
         <span>Source: {news.source}</span>
         <span>Score: {news.score}</span>
+      </div>
+      <div className="mt-3 text-xs text-gray-500">
+        {news.author && <span>Author: {news.author}</span>}
       </div>
     </div>
   );
