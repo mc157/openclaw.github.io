@@ -42,74 +42,6 @@ export async function scrapeSources(): Promise<ScrapedData> {
     general: []
   };
 }
-          url: 'https://github.com/trending',
-          type: 'json',
-          category: 'General'
-        },
-        {
-          name: 'Mozilla Hacks',
-          url: 'https://hacks.mozilla.org/feed/',
-          type: 'rss',
-          category: 'API'
-        },
-        {
-          name: 'AWS Blog',
-          url: 'https://aws.amazon.com/blogs/feed/',
-          type: 'rss',
-          category: 'API'
-        }
-      ],
-      maxItemsPerFeed: 8
-    });
-    
-    scrapedData.general = await techBlogScraper.scrape();
-
-    // Combine all scraped data
-    const allScrapedItems = [
-      ...scrapedData.reddit,
-      ...scrapedData.github,
-      ...scrapedData.general
-    ];
-
-    console.log('📊 Scraping completed:', {
-      reddit: scrapedData.reddit.length,
-      github: scrapedData.github.length,
-      general: scrapedData.general.length,
-      total: allScrapedItems.length
-    });
-
-    // Save to database
-    await newsDatabase.saveNews(allScrapedItems);
-
-    return scrapedData;
-  } catch (error) {
-    console.error('Error in scrapeSources:', error);
-    return scrapedData;
-  }
-}
-
-export async function aggregateData(): Promise<AggregatedNews> {
-  try {
-    console.log('📊 Starting data aggregation...');
-    
-    // Get data from database
-    const dbData = await newsDatabase.getAggregatedNews();
-    
-    // If database is empty, scrape fresh data
-    if (dbData.items.length === 0) {
-      console.log('📭 Database is empty, scraping fresh data...');
-      await scrapeSources();
-      const freshData = await newsDatabase.getAggregatedNews();
-      return freshData;
-    }
-
-    console.log(`✅ Aggregated ${dbData.items.length} items from ${dbData.totalSources} sources`);
-    return dbData;
-  } catch (error) {
-    console.error('Error aggregating data:', error);
-    return { items: [], lastUpdated: Date.now(), totalSources: 0 };
-  }
-}
 
 export async function refreshData(): Promise<AggregatedNews> {
   console.log('🔄 Starting data refresh...');
@@ -132,29 +64,36 @@ export async function refreshData(): Promise<AggregatedNews> {
 
 export async function addNewsItem(item: NewsItem): Promise<void> {
   try {
-    await newsDatabase.addNewsItem(item);
-    console.log(`✅ Added news item: ${item.title}`);
+    await newsDatabase.saveNews([item]);
+    console.log('✅ News item added successfully');
   } catch (error) {
     console.error('Error adding news item:', error);
     throw error;
   }
 }
 
-export async function cleanupOldData(): Promise<void> {
+export async function getDatabaseStats() {
   try {
-    await newsDatabase.cleanupOldItems(7 * 24 * 60 * 60 * 1000); // 7 days
-    console.log('✅ Cleaned up old data');
+    const stats = await newsDatabase.getStats();
+    return stats;
   } catch (error) {
-    console.error('Error cleaning up old data:', error);
-    throw error;
+    console.error('Error getting database stats:', error);
+    return {
+      totalItems: 0,
+      oldestItem: null,
+      newestItem: null,
+      byCategory: {}
+    };
   }
 }
 
-export async function getDatabaseStats() {
+export async function cleanupOldData(daysOld: number = 7): Promise<void> {
   try {
-    return await newsDatabase.getStats();
+    const cutoffDate = Date.now() - (daysOld * 24 * 60 * 60 * 1000);
+    await newsDatabase.cleanupOldItems(cutoffDate);
+    console.log('✅ Cleaned up old data');
   } catch (error) {
-    console.error('Error getting database stats:', error);
+    console.error('Error cleaning up old data:', error);
     throw error;
   }
 }

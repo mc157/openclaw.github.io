@@ -22,6 +22,12 @@ export class TechBlogScraper {
   }
 
   async scrape(): Promise<NewsItem[]> {
+    // For GitHub Pages, return empty array to avoid scraping
+    if (process.env.NODE_ENV === 'production') {
+      console.log('🔄 Skipping tech blogs scraping in production (GitHub Pages)');
+      return [];
+    }
+    
     const items: NewsItem[] = [];
     
     for (const feed of this.config.feeds) {

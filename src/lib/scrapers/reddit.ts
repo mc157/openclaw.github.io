@@ -15,6 +15,12 @@ export class RedditScraper {
   }
 
   async scrape(): Promise<NewsItem[]> {
+    // For GitHub Pages, return empty array to avoid scraping
+    if (process.env.NODE_ENV === 'production') {
+      console.log('🔄 Skipping Reddit scraping in production (GitHub Pages)');
+      return [];
+    }
+    
     const items: NewsItem[] = [];
     
     for (const subreddit of this.config.subreddits) {

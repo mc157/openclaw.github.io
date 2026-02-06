@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getNews, refreshData, aggregateData } from '@/lib/aggregator';
+import { getNews, refreshData } from '@/lib/aggregator';
 
 export const dynamic = 'force-static';
 export const revalidate = 3600; // Revalidate every hour

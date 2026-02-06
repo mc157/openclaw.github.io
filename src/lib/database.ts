@@ -2,43 +2,44 @@ import { promises as fs } from 'fs';
 import path from 'path';
 import { NewsItem, AggregatedNews } from './types';
 
-export interface DatabaseConfig {
-  dataDirectory: string;
-  backupInterval: number; // in milliseconds
-  maxBackups: number;
-}
-
 export class NewsDatabase {
-  private config: DatabaseConfig;
   private dataDir: string;
   private dbPath: string;
   private backupDir: string;
 
-  constructor(config: DatabaseConfig) {
-    this.config = config;
-    this.dataDir = config.dataDirectory;
+  constructor(dataDirectory: string = './data') {
+    this.dataDir = dataDirectory;
     this.dbPath = path.join(this.dataDir, 'news-data.json');
     this.backupDir = path.join(this.dataDir, 'backups');
     
-    // Ensure directories exist
+    // For GitHub Pages, ensure data directory exists
     this.ensureDirectories();
   }
 
   private async ensureDirectories() {
-    try {
-      await fs.access(this.dataDir);
-    } catch {
-      await fs.mkdir(this.dataDir, { recursive: true });
+    // For GitHub Pages, use static data or create minimal structure
+    if ((process.env.NODE_ENV as string) === 'production') {
+      return; // Skip directory creation in production (GitHub Pages)
     }
     
     try {
-      await fs.access(this.backupDir);
+      await fs.access(this.dataDir);
     } catch {
-      await fs.mkdir(this.backupDir, { recursive: true });
+      try {
+        await fs.mkdir(this.dataDir, { recursive: true });
+      } catch {
+        // Ignore errors in production
+      }
     }
   }
 
   async saveNews(items: NewsItem[]): Promise<void> {
+    // For GitHub Pages, skip saving in production
+    if ((process.env.NODE_ENV as string) === 'production') {
+      console.log('✅ Skipping database save in production (GitHub Pages)');
+      return;
+    }
+    
     try {
       const data = {
         items,
@@ -50,13 +51,21 @@ export class NewsDatabase {
       console.log(`✅ Saved ${items.length} news items to database`);
     } catch (error) {
       console.error('❌ Error saving news to database:', error);
-      throw error;
+      // Don't throw in production
+      if ((process.env.NODE_ENV as string) !== 'production') {
+        throw error;
+      }
     }
   }
 
   async getNews(): Promise<NewsItem[]> {
     try {
-      const data = await fs.readFile(this.dbPath, 'utf-8');
+      // For GitHub Pages, try to read from static data first
+      const staticDataPath = (process.env.NODE_ENV as string) === 'production' 
+        ? './data/scraped-data.json' 
+        : this.dbPath;
+      
+      const data = await fs.readFile(staticDataPath, 'utf-8');
       const parsed = JSON.parse(data);
       return parsed.items || [];
     } catch (error) {
@@ -65,7 +74,11 @@ export class NewsDatabase {
         return [];
       }
       console.error('❌ Error reading news from database:', error);
-      throw error;
+      // Don't throw in production
+      if ((process.env.NODE_ENV as string) !== 'production') {
+        throw error;
+      }
+      return [];
     }
   }
 
@@ -76,8 +89,8 @@ export class NewsDatabase {
       
       return {
         items,
-        lastUpdated: items.length > 0 ? Math.max(...items.map(item => item.timestamp)) : Date.now(),
-        totalSources: sources.size
+        totalSources: sources.size,
+        lastUpdated: items.length > 0 ? Math.max(...items.map(item => item.timestamp)) : Date.now()
       };
     } catch (error) {
       console.error('❌ Error getting aggregated news:', error);
@@ -90,6 +103,12 @@ export class NewsDatabase {
   }
 
   async addNewsItem(item: NewsItem): Promise<void> {
+    // For GitHub Pages, skip adding items in production
+    if ((process.env.NODE_ENV as string) === 'production') {
+      console.log('✅ Skipping add news item in production (GitHub Pages)');
+      return;
+    }
+    
     try {
       const existingItems = await this.getNews();
       
@@ -107,11 +126,20 @@ export class NewsDatabase {
       console.log(`✅ Added new news item: ${item.title}`);
     } catch (error) {
       console.error('❌ Error adding news item:', error);
-      throw error;
+      // Don't throw in production
+      if ((process.env.NODE_ENV as string) !== 'production') {
+        throw error;
+      }
     }
   }
 
   async cleanupOldItems(maxAge: number = 7 * 24 * 60 * 60 * 1000): Promise<void> {
+    // For GitHub Pages, skip cleanup in production
+    if ((process.env.NODE_ENV as string) === 'production') {
+      console.log('✅ Skipping cleanup in production (GitHub Pages)');
+      return;
+    }
+    
     try {
       const items = await this.getNews();
       const cutoff = Date.now() - maxAge;
@@ -122,19 +150,19 @@ export class NewsDatabase {
         const removed = items.length - filteredItems.length;
         await this.saveNews(filteredItems);
         console.log(`🧹 Removed ${removed} old news items`);
+      } else {
+        console.log('✅ No old items to remove');
       }
     } catch (error) {
       console.error('❌ Error cleaning up old items:', error);
-      throw error;
+      // Don't throw in production
+      if ((process.env.NODE_ENV as string) !== 'production') {
+        throw error;
+      }
     }
   }
 
-  async getStats(): Promise<{
-    totalItems: number;
-    categories: Record<string, number>;
-    sources: Record<string, number>;
-    dateRange: { oldest: number; newest: number };
-  }> {
+  async getStats() {
     try {
       const items = await this.getNews();
       
@@ -161,50 +189,94 @@ export class NewsDatabase {
       };
     } catch (error) {
       console.error('❌ Error getting database stats:', error);
-      throw error;
+      if ((process.env.NODE_ENV as string) !== 'production') {
+        throw error;
+      }
+      return {
+        totalItems: 0,
+        categories: {},
+        sources: {},
+        dateRange: { oldest: Date.now(), newest: Date.now() }
+      };
     }
   }
 
   private async writeWithBackup(data: any): Promise<void> {
-    // Create backup
-    const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-    const backupPath = path.join(this.backupDir, `news-data-${timestamp}.json`);
+    // For GitHub Pages, skip writing in production
+    if ((process.env.NODE_ENV as string) === 'production') {
+      return;
+    }
     
     try {
-      await fs.writeFile(backupPath, JSON.stringify(data, null, 2));
+      // Create backup first
+      await this.createBackup();
+      
+      // Write new data
+      await fs.writeFile(this.dbPath, JSON.stringify(data, null, 2));
+    } catch (error) {
+      console.error('❌ Error writing to database:', error);
+      // Don't throw in production
+      if ((process.env.NODE_ENV as string) !== 'production') {
+        throw error;
+      }
+    }
+  }
+
+  private async createBackup(): Promise<void> {
+    try {
+      if (!(await this.fileExists(this.dbPath))) {
+        return; // No file to backup
+      }
+
+      const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+      const backupPath = path.join(this.backupDir, `backup-${timestamp}.json`);
+      
+      await fs.copyFile(this.dbPath, backupPath);
       
       // Clean up old backups
       await this.cleanupOldBackups();
     } catch (error) {
-      console.warn('⚠️  Failed to create backup, continuing with main save...');
+      console.warn('⚠️  Failed to create backup:', error);
     }
-
-    // Write main file
-    await fs.writeFile(this.dbPath, JSON.stringify(data, null, 2));
   }
 
   private async cleanupOldBackups(): Promise<void> {
     try {
       const files = await fs.readdir(this.backupDir);
       const backupFiles = files
-        .filter(file => file.startsWith('news-data-') && file.endsWith('.json'))
-        .sort()
-        .reverse();
+        .filter(file => file.startsWith('backup-') && file.endsWith('.json'))
+        .map(file => ({
+          name: file,
+          path: path.join(this.backupDir, file),
+          stats: null as any
+        }));
 
-      // Remove old backups beyond maxBackups
-      const toRemove = backupFiles.slice(this.config.maxBackups);
+      // Sort by modification time (newest first)
+      for (const file of backupFiles) {
+        file.stats = await fs.stat(file.path);
+      }
+
+      backupFiles.sort((a, b) => b.stats.mtime.getTime() - a.stats.mtime.getTime());
+
+      // Remove old backups
+      const toRemove = backupFiles.slice(5); // Keep last 5 backups
       for (const file of toRemove) {
-        await fs.unlink(path.join(this.backupDir, file));
+        await fs.unlink(file.path);
       }
     } catch (error) {
       console.warn('⚠️  Failed to cleanup old backups:', error);
     }
   }
+
+  private async fileExists(filePath: string): Promise<boolean> {
+    try {
+      await fs.access(filePath);
+      return true;
+    } catch {
+      return false;
+    }
+  }
 }
 
-// Create a singleton instance
-export const newsDatabase = new NewsDatabase({
-  dataDirectory: path.join(process.cwd(), 'data'),
-  backupInterval: 24 * 60 * 60 * 1000, // 24 hours
-  maxBackups: 7
-});
+// Export singleton instance for convenience
+export const newsDatabase = new NewsDatabase();
