@@ -20,7 +20,7 @@ export function LiveTicker({
   const [displayText, setDisplayText] = useState('');
   const [isPaused, setIsPaused] = useState(false);
 
-  const visibleItems = items.slice(0, maxItems);
+  const visibleItems = Array.isArray(items) ? items.slice(0, maxItems) : [];
 
   useEffect(() => {
     if (visibleItems.length === 0 || isPaused) return;

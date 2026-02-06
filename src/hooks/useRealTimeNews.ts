@@ -19,7 +19,8 @@ export function useRealTimeNews({ interval = 30, autoRefresh = true }: UseRealTi
       const response = await fetch('/api/news');
       if (response.ok) {
         const data = await response.json();
-        setNews(data);
+        // The API returns { success: true, data: items }, so we need data.data
+        setNews(data.data || []);
         setLastUpdated(new Date());
         setNewItemsCount(prev => prev + 1); // Increment to show new items indicator
       }

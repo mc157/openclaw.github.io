@@ -17,14 +17,16 @@ export async function getNews(): Promise<NewsItem[]> {
       const fs = await import('fs');
       if (fs.existsSync(staticDataPath)) {
         const data = JSON.parse(fs.readFileSync(staticDataPath, 'utf8'));
+        console.log('Loaded news data:', data.items?.length || 0, 'items');
         return data.items || [];
       }
     } catch (fsError) {
-      console.log('Could not load static data, using fallback:', fsError);
+      console.log('Could not load static data from', staticDataPath, ':', fsError);
     }
     
     // Fallback: get from database
     const dbNews = await newsDatabase.getNews();
+    console.log('Loaded database news:', dbNews.length, 'items');
     return dbNews.length > 0 ? dbNews : [];
   } catch (error) {
     console.error('Error fetching news:', error);

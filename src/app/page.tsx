@@ -3,13 +3,34 @@
 import { NewsCard } from '@/components/NewsCard';
 import { CategoryFilter } from '@/components/CategoryFilter';
 import { LiveTicker } from '@/components/LiveTicker';
-import { useRealTimeNews } from '@/hooks/useRealTimeNews';
 import { useState, useEffect } from 'react';
+import { NewsItem } from '@/lib/types';
 
 export default function Home() {
-  const { news, loading, lastUpdated, manualRefresh, hasNewItems } = useRealTimeNews();
-  const [filteredNews, setFilteredNews] = useState(news);
+  const [news, setNews] = useState<NewsItem[]>([]);
+  const [filteredNews, setFilteredNews] = useState<NewsItem[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<string>('All');
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    // Load data directly from JSON file
+    const loadNews = async () => {
+      try {
+        const response = await fetch('/src/data/scraped-data.json');
+        if (response.ok) {
+          const data = await response.json();
+          setNews(data.items || []);
+          setFilteredNews(data.items || []);
+        }
+      } catch (error) {
+        console.error('Error loading news:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadNews();
+  }, []);
 
   useEffect(() => {
     let filtered = news;
@@ -47,17 +68,15 @@ export default function Home() {
               <h1 className="text-4xl font-bold text-cyan-400">ClawBot News Hub</h1>
               <p className="text-gray-300">Cyberpunk News Aggregation</p>
               <div className="text-sm text-gray-400 mt-2">
-                Updated: {formatLastUpdated(lastUpdated)}
-                {hasNewItems && (
-                  <span className="ml-2 text-green-400 animate-pulse">
-                    🔴 {news.length} sources live
-                  </span>
-                )}
+                Updated: Just now
+                <span className="ml-2 text-green-400 animate-pulse">
+                  🔴 {news.length} sources live
+                </span>
               </div>
             </div>
             <div className="flex gap-2">
               <button
-                onClick={manualRefresh}
+                onClick={() => window.location.reload()}
                 disabled={loading}
                 className="bg-cyan-600 hover:bg-cyan-700 px-4 py-2 rounded disabled:opacity-50"
               >
