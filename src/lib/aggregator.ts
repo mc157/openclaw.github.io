@@ -8,17 +8,24 @@ import {
 
 export async function getNews(): Promise<NewsItem[]> {
   try {
-    // Try to get from database first
-    const dbNews = await newsDatabase.getNews();
+    // For GitHub Pages, use static data to avoid scraping during build
+    const staticDataPath = process.env.NODE_ENV === 'production' 
+      ? './data/scraped-data.json' 
+      : './src/data/scraped-data.json';
     
-    // If database is empty or we want fresh data, aggregate new data
-    if (dbNews.length === 0) {
-      console.log('📭 Database is empty, aggregating fresh data...');
-      const aggregated = await aggregateData();
-      return aggregated.items;
+    try {
+      const fs = await import('fs');
+      if (fs.existsSync(staticDataPath)) {
+        const data = JSON.parse(fs.readFileSync(staticDataPath, 'utf8'));
+        return data.items || [];
+      }
+    } catch (fsError) {
+      console.log('Could not load static data, using fallback:', fsError);
     }
     
-    return dbNews;
+    // Fallback: get from database
+    const dbNews = await newsDatabase.getNews();
+    return dbNews.length > 0 ? dbNews : [];
   } catch (error) {
     console.error('Error fetching news:', error);
     return [];
@@ -26,60 +33,15 @@ export async function getNews(): Promise<NewsItem[]> {
 }
 
 export async function scrapeSources(): Promise<ScrapedData> {
-  const scrapedData: ScrapedData = {
+  // For GitHub Pages, return empty data to avoid scraping
+  console.log('🔄 Using static data (no scraping for GitHub Pages)');
+  
+  return {
     reddit: [],
     github: [],
     general: []
   };
-
-  try {
-    console.log('🕷️  Starting scraping process...');
-    
-    // Reddit scraping
-    console.log('📡 Scraping Reddit...');
-    const redditScraper = createRedditScraper({
-      subreddits: ['programming', 'technology', 'webdev', 'machinelearning', 'LocalLLaMA', 'AI'],
-      limit: 15,
-      timeFilter: 'day'
-    });
-    
-    scrapedData.reddit = await redditScraper.scrape();
-
-    // GitHub scraping
-    console.log('🐙 Scraping GitHub...');
-    const githubScraper = createGitHubScraper({
-      topics: ['api', 'machine-learning', 'javascript', 'python', 'web-development', 'ai', 'llm'],
-      limit: 20,
-      includeIssues: true,
-      includeDiscussions: false
-    });
-    
-    scrapedData.github = await githubScraper.scrape();
-
-    // Tech blogs scraping
-    console.log('📰 Scraping tech blogs...');
-    const techBlogScraper = createTechBlogScraper({
-      feeds: [
-        {
-          name: 'TechCrunch',
-          url: 'https://techcrunch.com/feed/',
-          type: 'rss',
-          category: 'General'
-        },
-        {
-          name: 'Hacker News',
-          url: 'https://hnrss.org/newest',
-          type: 'rss',
-          category: 'General'
-        },
-        {
-          name: 'Dev.to',
-          url: 'https://dev.to/feed',
-          type: 'rss',
-          category: 'How-To'
-        },
-        {
-          name: 'GitHub Trending',
+}
           url: 'https://github.com/trending',
           type: 'json',
           category: 'General'
@@ -153,18 +115,18 @@ export async function refreshData(): Promise<AggregatedNews> {
   console.log('🔄 Starting data refresh...');
   
   try {
-    // Scrape fresh data
-    await scrapeSources();
+    // For GitHub Pages, just return existing data instead of scraping
+    const news = await getNews();
+    console.log(`✅ Data refresh completed. ${news.length} items from 3 sources (static mode).`);
     
-    // Get updated aggregated data
-    const result = await newsDatabase.getAggregatedNews();
-    
-    console.log(`✅ Data refresh completed. ${result.items.length} items from ${result.totalSources} sources.`);
-    return result;
+    return {
+      items: news,
+      totalSources: 3,
+      lastUpdated: Date.now()
+    };
   } catch (error) {
     console.error('Error during data refresh:', error);
-    // Return existing data even if refresh fails
-    return await newsDatabase.getAggregatedNews();
+    return { items: [], totalSources: 0, lastUpdated: Date.now() };
   }
 }
 

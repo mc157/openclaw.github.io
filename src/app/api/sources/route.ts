@@ -1,6 +1,9 @@
 import { NextResponse } from 'next/server';
 import { scrapeSources } from '@/lib/aggregator';
 
+export const dynamic = 'force-static';
+export const revalidate = 3600; // Revalidate every hour
+
 export async function GET() {
   try {
     const sources = await scrapeSources();

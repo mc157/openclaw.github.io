@@ -1,8 +1,12 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  experimental: {
-    turbopack: true,
+  output: 'export',
+  reactStrictMode: true,
+  images: {
+    unoptimized: true
   },
+  trailingSlash: true,
+  distDir: 'out'
 }
 
 module.exports = nextConfig

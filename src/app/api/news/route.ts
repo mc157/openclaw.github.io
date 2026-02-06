@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getNews, refreshData, aggregateData } from '@/lib/aggregator';
 
+export const dynamic = 'force-static';
+export const revalidate = 3600; // Revalidate every hour
+
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
   const category = searchParams.get('category');

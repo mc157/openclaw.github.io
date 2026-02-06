@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { refreshData } from '@/lib/aggregator';
 
+export const dynamic = 'force-static';
+export const revalidate = 3600; // Revalidate every hour
+
 // Simple WebSocket-like real-time update endpoint
 // In a production environment, this would use actual WebSocket connections
 export async function GET(request: NextRequest) {
